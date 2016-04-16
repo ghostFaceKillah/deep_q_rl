@@ -210,6 +210,9 @@ class DeepQLearner:
         elif network_type == "mike_joint":
             return self.build_mike_joint_network(input_width, input_height,
                                                 output_dim, num_frames, batch_size)
+        elif network_type == "mike_crazy":
+            return self.build_mike_crazy_network(input_width, input_height,
+                                                 output_dim, num_frames, batch_size)
         elif network_type == "big_joint":
             return self.build_big_joint_network(input_width, input_height,
                                                 output_dim, num_frames, batch_size)
@@ -458,6 +461,137 @@ class DeepQLearner:
         )
 
         return l_out
+
+    def build_mike_crazy_network(self, input_width, input_height, output_dim,
+                                 num_frames, batch_size):
+        """
+        We need to go deeper.
+        Nature + DEEPRAM
+        """
+        self.l_in = lasagne.layers.InputLayer(
+            shape=(batch_size, num_frames, input_width, input_height)
+        )
+
+        self.l_ram_in = lasagne.layers.InputLayer(
+            shape=(batch_size, self.RAM_SIZE)
+        )
+
+        l_conv1 = lasagne.layers.Conv2DLayer(
+            self.l_in,
+            num_filters=32,
+            filter_size=(8, 8),
+            stride=(4, 4),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1),
+        )
+
+        l_conv2 = lasagne.layers.Conv2DLayer(
+            l_conv1,
+            num_filters=64,
+            filter_size=(4, 4),
+            stride=(2, 2),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            #W=lasagne.init.HeUniform(c01b=True),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1),
+        )
+
+        l_conv3 = lasagne.layers.Conv2DLayer(
+            l_conv2,
+            num_filters=64,
+            filter_size=(3, 3),
+            stride=(1, 1),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            #W=lasagne.init.HeUniform(c01b=True),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1),
+        )
+
+        l_hidden1 = lasagne.layers.DenseLayer(
+            l_conv3,
+            num_units=512,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            #W=lasagne.init.HeUniform(),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden_ram1 = lasagne.layers.DenseLayer(
+            self.l_ram_in,
+            num_units=self.RAM_SIZE / 2,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden_ram2 = lasagne.layers.DenseLayer(
+            l_hidden_ram1,
+            num_units=self.RAM_SIZE / 4,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden_ram3 = lasagne.layers.DenseLayer(
+            l_hidden_ram2,
+            num_units=self.RAM_SIZE / 4,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden_ram4 = lasagne.layers.DenseLayer(
+            l_hidden_ram3,
+            num_units=self.RAM_SIZE / 4,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_joined = lasagne.layers.ConcatLayer(
+            [l_hidden1, l_hidden_ram4],
+            axis=1  # 0-based
+        )
+
+        l_hidden_joined = lasagne.layers.DenseLayer(
+            l_joined,
+            num_units=256,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_hidden_joined_2 = lasagne.layers.DenseLayer(
+            l_hidden_joined,
+            num_units=256,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_out = lasagne.layers.DenseLayer(
+            l_hidden_joined_2,
+            num_units=output_dim,
+            nonlinearity=None,
+            #W=lasagne.init.HeUniform(),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        return l_out
+
+
+
+
+
+
+
+
+
+
+
+
 
     def build_mike_joint_network(self, input_width, input_height, output_dim,
                                 num_frames, batch_size):
