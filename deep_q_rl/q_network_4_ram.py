@@ -44,8 +44,7 @@ class DeepQLearner:
         self.clip_delta = clip_delta
         self.freeze_interval = freeze_interval
         self.rng = rng
-#        self.RAM_SIZE = 128 * 4  # times frame skip
-	self.RAM_SIZE = 128
+        self.RAM_SIZE = 128 * 4  # times frame skip
         np.set_printoptions(threshold='nan')
 
         lasagne.random.set_rng(self.rng)
@@ -94,24 +93,24 @@ class DeepQLearner:
             broadcastable=(False, True))
 
         q_vals = lasagne.layers.get_output(self.l_out,
-            {
+           {
        #         self.l_in: (states / input_scale),
                 self.l_ram_in: (ram_states / 256.0)
-            }
+           }
         )
         
         if self.freeze_interval > 0:
             next_q_vals = lasagne.layers.get_output(self.next_l_out,
             {
        #           self.l_in: (next_states / input_scale),
-                  self.l_ram_in:(next_ram_states / 256.0)
+    	           self.l_ram_in: (next_ram_states / 256.0)
             }
             )
         else:
             next_q_vals = lasagne.layers.get_output(self.l_out,
                 {
        #           self.l_in: (next_states / input_scale),
-                  self.l_ram_in:(next_ram_states / 256.0),
+                  self.l_ram_in: (next_ram_states / 256.0),
                 }
                 )
             next_q_vals = theano.gradient.disconnected_grad(next_q_vals)
@@ -472,8 +471,7 @@ class DeepQLearner:
 
         l_hidden2 = lasagne.layers.DenseLayer(
             l_hidden1,
-#            num_units=self.RAM_SIZE/4,
-	    num_units=self.RAM_SIZE,
+            num_units=self.RAM_SIZE/4,
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.HeUniform(),
             b=lasagne.init.Constant(.1)
@@ -717,3 +715,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

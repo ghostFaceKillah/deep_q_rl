@@ -9,6 +9,7 @@ Usage:
 plot_results.py RESULTS_CSV_FILE
 """
 
+import ntpath
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -28,5 +29,6 @@ plt.plot(results[:, 0], results[:, 4], '-')
 plt.xlabel('Training Epochs')
 plt.ylabel('Average action value')
 #plt.ylim([0, 4])
-plt.show()
-plt.savefig("figure.png")
+#plt.show()
+head,_ = ntpath.split(sys.argv[1])
+plt.savefig(head+"/figure.png")

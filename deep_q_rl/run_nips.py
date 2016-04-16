@@ -24,7 +24,7 @@ class Defaults:
     # ----------------------
     BASE_ROM_PATH = "../roms/"
     ROM = 'breakout.bin'
-    FRAME_SKIP = 4
+    FRAME_SKIP = 30
     REPEAT_ACTION_PROBABILITY = 0
 
     # ----------------------
@@ -43,7 +43,7 @@ class Defaults:
     EPSILON_DECAY = 1000000
     PHI_LENGTH = 4
     UPDATE_FREQUENCY = 1
-    REPLAY_MEMORY_SIZE = 1000000
+    REPLAY_MEMORY_SIZE = 100000
     BATCH_SIZE = 32
     NETWORK_TYPE = "nips_dnn"
     FREEZE_INTERVAL = -1
