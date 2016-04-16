@@ -122,7 +122,7 @@ class NeuralAgent(object):
 
         Arguments:
            observation - height x width numpy array
-           ram         - state of the ram numpy array of size 128
+           ram         - state of the ram numpy array of size 128 * 8
 
         Returns:
            An integer action

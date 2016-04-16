@@ -44,7 +44,7 @@ class DeepQLearner:
         self.clip_delta = clip_delta
         self.freeze_interval = freeze_interval
         self.rng = rng
-        self.RAM_SIZE = 128
+        self.RAM_SIZE = 128 * 8
 #        self.RAM_SIZE = 128 * 4  # times frame skip
         np.set_printoptions(threshold='nan')
 
@@ -459,7 +459,6 @@ class DeepQLearner:
 
         return l_out
 
-
     def build_mike_joint_network(self, input_width, input_height, output_dim,
                                 num_frames, batch_size):
         """
@@ -532,7 +531,7 @@ class DeepQLearner:
 
         l_hidden_ram3 = lasagne.layers.DenseLayer(
             l_hidden_ram2,
-            num_units=self.RAM_SIZE / 8,
+            num_units=self.RAM_SIZE / 16,
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.Normal(.01),
             b=lasagne.init.Constant(.1)
@@ -540,7 +539,7 @@ class DeepQLearner:
 
         l_hidden_ram4 = lasagne.layers.DenseLayer(
             l_hidden_ram3,
-            num_units=self.RAM_SIZE / 16,
+            num_units=self.RAM_SIZE / 64,
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.Normal(.01),
             b=lasagne.init.Constant(.1)
@@ -548,12 +547,11 @@ class DeepQLearner:
 
         l_hidden_ram5 = lasagne.layers.DenseLayer(
             l_hidden_ram4,
-            num_units=self.RAM_SIZE / 32,
+            num_units=self.RAM_SIZE / 256,
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.Normal(.01),
             b=lasagne.init.Constant(.1)
         )
-
 
         l_joined = lasagne.layers.ConcatLayer(
             [l_hidden1, l_hidden_ram5],
@@ -578,7 +576,6 @@ class DeepQLearner:
         )
 
         return l_out
-
 
 
     def build_big_joint_network(self, input_width, input_height, output_dim,

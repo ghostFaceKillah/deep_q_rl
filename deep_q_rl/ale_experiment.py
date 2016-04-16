@@ -36,8 +36,9 @@ class ALEExperiment(object):
         self.screen_buffer = np.empty((self.buffer_length,
                                        self.height, self.width),
                                       dtype=np.uint8)
-        self.ram_size = 128 # TODO: pass as an argument
+        self.ram_size = 8 * 128 # TODO: pass as an argument
         self.current_ram = np.empty((self.ram_size,), dtype=np.uint8)
+        self.current_ram_int = np.empty((self.ram_size / 8, ), dtype=np.uint8)
 
         self.terminal_lol = False # Most recent episode ended on a loss of life
         self.max_start_nullops = max_start_nullops
@@ -109,7 +110,8 @@ class ALEExperiment(object):
         index = self.buffer_count % self.buffer_length
 
         self.ale.getScreenGrayscale(self.screen_buffer[index, ...])
-        self.current_ram = self.ale.getRAM()
+        self.current_ram_int = self.ale.getRAM(self.current_ram_int)
+        self.current_ram = np.unpackbits(self.current_ram_int)
 
         self.buffer_count += 1
         return reward
