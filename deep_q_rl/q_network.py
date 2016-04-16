@@ -96,7 +96,7 @@ class DeepQLearner:
         q_vals = lasagne.layers.get_output(self.l_out,
             {
                self.l_in: (states / input_scale),
-               self.l_ram_in: (ram_states / 256.0)
+               self.l_ram_in: ram_states
             }
         )
         
@@ -104,14 +104,14 @@ class DeepQLearner:
             next_q_vals = lasagne.layers.get_output(self.next_l_out,
             {
                  self.l_in: (next_states / input_scale),
-                 self.l_ram_in:(next_ram_states / 256.0)
+                 self.l_ram_in: next_ram_states
             }
         )
         else:
             next_q_vals = lasagne.layers.get_output(self.l_out,
                 {
-                 self.l_in: (next_states / input_scale),
-                 self.l_ram_in:(next_ram_states / 256.0),
+                    self.l_in: (next_states / input_scale),
+                    self.l_ram_in: next_ram_states
                 }
             )
             next_q_vals = theano.gradient.disconnected_grad(next_q_vals)

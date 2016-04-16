@@ -13,7 +13,7 @@ class DataSet(object):
 actions, and rewards.
 
     """
-    def __init__(self, width, height, rng, max_steps=1000, phi_length=4, ram_size=128):
+    def __init__(self, width, height, rng, max_steps=1000, phi_length=4, ram_size=8*128):
         """Construct a DataSet.
 
         Arguments:
