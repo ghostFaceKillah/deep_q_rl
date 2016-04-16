@@ -207,6 +207,9 @@ class DeepQLearner:
         elif network_type == "ram_dropout":
             return self.build_ram_dropout_network(input_width, input_height,
                     output_dim, num_frames, batch_size)
+        elif network_type == "big_joint":
+            return self.build_big_joint_network(input_width, input_height,
+                                                output_dim, num_frames, batch_size)
         elif network_type == "big_ram":
             return self.build_big_ram_network(input_width, input_height,
                     output_dim, num_frames, batch_size)
