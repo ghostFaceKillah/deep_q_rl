@@ -171,13 +171,13 @@ class DeepQLearner:
                                                      self.momentum)
 
         self._train = theano.function([], [loss, q_vals], updates=updates,
-                                      givens=givens, on_unused_input='warn')
+                                      givens=givens, on_unused_input='ignore')
         self._q_vals = theano.function([], q_vals,
                                        givens={
                                          states: self.states_shared,
                                          ram_states: self.ram_states_shared,
                                          },
-                                       on_unused_input='warn')
+                                       on_unused_input='ignore')
 
     def build_network(self, network_type, input_width, input_height,
                       output_dim, num_frames, batch_size):
