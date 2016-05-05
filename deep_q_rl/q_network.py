@@ -601,15 +601,6 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1),
         )
 
-        l_hidden1 = lasagne.layers.DenseLayer(
-            l_conv2,
-            num_units=256,
-            nonlinearity=lasagne.nonlinearities.rectify,
-            #W=lasagne.init.HeUniform(),
-            W=lasagne.init.Normal(.01),
-            b=lasagne.init.Constant(.1)
-        )
-
         l_hidden_ram1 = lasagne.layers.DenseLayer(
             self.l_ram_in,
             num_units=self.RAM_SIZE / 64,
@@ -627,7 +618,7 @@ class DeepQLearner:
         )
 
         l_joined = lasagne.layers.ConcatLayer(
-            [l_hidden1, l_hidden_ram2],
+            [l_conv2, l_hidden_ram2],
             axis=1  # 0-based
         )
 
