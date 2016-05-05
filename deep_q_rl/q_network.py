@@ -617,8 +617,10 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
+        l_flat = lasagne.layers.FlattenLayer(l_conv2)
+
         l_joined = lasagne.layers.ConcatLayer(
-            [l_conv2.flatten(2), l_hidden_ram2],
+            [l_flat, l_hidden_ram2],
             axis=1  # 0-based
         )
 
