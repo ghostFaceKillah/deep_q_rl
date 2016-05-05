@@ -568,7 +568,6 @@ class DeepQLearner:
         return l_out
 
 
-
     def build_big_joint_network(self, input_width, input_height, output_dim,
                                 num_frames, batch_size):
         """
@@ -651,7 +650,6 @@ class DeepQLearner:
         return l_out
 
 
-
     def build_nips_network(self, input_width, input_height, output_dim,
                            num_frames, batch_size):
         """
@@ -660,6 +658,10 @@ class DeepQLearner:
         from lasagne.layers import cuda_convnet
         self.l_in = lasagne.layers.InputLayer(
             shape=(batch_size, num_frames, input_width, input_height)
+        )
+
+        self.l_ram_in = lasagne.layers.InputLayer(
+            shape=(batch_size, self.RAM_SIZE)
         )
 
         l_conv1 = cuda_convnet.Conv2DCCLayer(
