@@ -13,11 +13,16 @@ Nature, 518(7540):529-533, February 2015
 Author of Lasagne port: Nissan Pow
 Modifications: Nathan Sprague
 """
+from blocks.bricks.recurrent import SimpleRecurrent
+from blocks.bricks import Linear, Tanh
+from blocks import initialization
+
 import lasagne
 import numpy as np
 import theano
 import theano.tensor as T
 from updates import deepmind_rmsprop
+
 
 
 class DeepQLearner:
@@ -232,7 +237,10 @@ class DeepQLearner:
         elif network_type == "big_mixed_ram":
             return self.build_big_joint_network(input_width, input_height,
                                                 output_dim, num_frames, batch_size)
-
+        elif network_type == "rnn":
+            return self.build_recurent_network(input_width, input_height,
+                                                output_dim, num_frames,
+                                               batch_size)
         elif network_type == "ram_dropout":
             return self.build_ram_dropout_network(input_width, input_height,
                     output_dim, num_frames, batch_size)
@@ -605,6 +613,71 @@ class DeepQLearner:
 
         return l_out
 
+
+
+    def build_recurent_network(self, input_width, input_height, output_dim,
+                                num_frames, batch_size):
+        """
+        NIPS + deeper ram
+        """
+        self.l_in = lasagne.layers.InputLayer(
+            shape=(batch_size, num_frames, input_width, input_height)
+        )
+
+        l_conv1 = lasagne.layers.Conv2DLayer(
+            self.l_in,
+            num_filters=16,
+            filter_size=(8, 8),
+            stride=(4, 4),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            #W=lasagne.init.HeUniform(c01b=True),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1),
+        )
+
+        l_conv2 = lasagne.layers.Conv2DLayer(
+            l_conv1,
+            num_filters=32,
+            filter_size=(4, 4),
+            stride=(2, 2),
+            nonlinearity=lasagne.nonlinearities.rectify,
+            #W=lasagne.init.HeUniform(c01b=True),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1),
+        )
+
+        l_hidden1 = lasagne.layers.DenseLayer(
+            l_conv2,
+            num_units=256,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+
+        recurrent_layer = RecurrentLayer(l_hidden1)
+
+        l_hidden_joined = lasagne.layers.DenseLayer(
+            recurrent_layer,
+            num_units=256,
+            nonlinearity=lasagne.nonlinearities.rectify,
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        l_out = lasagne.layers.DenseLayer(
+            l_hidden_joined,
+            num_units=output_dim,
+            nonlinearity=None,
+            #W=lasagne.init.HeUniform(),
+            W=lasagne.init.Normal(.01),
+            b=lasagne.init.Constant(.1)
+        )
+
+        return l_out
+
+
+
     def build_big_joint_network(self, input_width, input_height, output_dim,
                                 num_frames, batch_size):
         """
@@ -614,8 +687,7 @@ class DeepQLearner:
             shape=(batch_size, num_frames, input_width, input_height)
         )
 
-        self.l_ram_in = lasagne.layers.InputLayer(
-            shape=(batch_size, self.RAM_SIZE)
+        self.l_ram_in = lasagne.layers.InputLayer( shape=(batch_size, self.RAM_SIZE)
         )
 
         l_conv1 = lasagne.layers.Conv2DLayer(
@@ -648,6 +720,7 @@ class DeepQLearner:
             W=lasagne.init.Normal(.01),
             b=lasagne.init.Constant(.1)
         )
+
 
         l_hidden_ram1 = lasagne.layers.DenseLayer(
             self.l_ram_in,
@@ -820,6 +893,33 @@ class DeepQLearner:
         )
 
         return l_out
+
+
+class RecurrentLayer(lasagne.layers.Layer):
+    def __init__(self, incoming, **kwargs):
+        super(RecurrentLayer, self).__init__(incoming, **kwargs)
+
+        self.linear = Linear(
+            input_dim=256,
+            output_dim=256
+        )
+
+        self.rnn = SimpleRecurrent(
+            dim=256,
+            activation=Tanh()
+        )
+
+        for bricks in [self.linear, self.rnn]:
+            bricks.weights_init = initialization.Uniform(width=0.08)
+            bricks.biases_init =  initialization.Constant(0)
+            bricks.initialize()
+
+    def get_output_for(self, input, **kwargs):
+        return self.rnn.apply(
+            self.linear.apply(
+                input
+            )
+        )
 
 def main():
     net = DeepQLearner(84, 84, 16, 4, .99, .00025, .95, .95, 10000,
