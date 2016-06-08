@@ -47,6 +47,7 @@ class Defaults:
     UPDATE_FREQUENCY = 1
     REPLAY_MEMORY_SIZE = 100000
     BATCH_SIZE = 32
+    # NETWORK_TYPE = "big_mixed_ram"
     NETWORK_TYPE = "rnn"
     FREEZE_INTERVAL = -1
     REPLAY_START_SIZE = 100
