@@ -1,0 +1,27 @@
+Lasagne
+=======
+
+How standard layer works in lasagne?
+How recurrent layers are implemented in lasagne
+
+
+Blocks
+======
+
+How standard layer works in blocks?
+-----------------------------------
+
+
+
+How recurrent layer works in blocks?
+------------------------------------
+
+For examples of this, see implementation of SimpleRecurrent and
+blocks.bricks.recurrent in general.
+
+def apply(self, inputs, states, mask=None)
+of SimpleRecurrent is wrapped in an @recurrent decorator. This decorator's
+idea is to be able to call apply for a sequence of inputs, where in 
+actual apply method that is being wrapped there is only one step implemented.
+
+I am having problems with this idea, I cannot get it to work with lasagne well.
