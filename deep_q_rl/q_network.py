@@ -77,7 +77,7 @@ class DeepQLearner:
         rewards = T.col('rewards')
         actions = T.icol('actions')
         terminals = T.icol('terminals')
-        hidden_states = T.col('hidden_state_init')
+        hidden_states = T.matrix('hidden_state_init')
 
         self.states_shared = theano.shared(
             np.zeros((batch_size, num_frames, input_height, input_width),
@@ -107,7 +107,7 @@ class DeepQLearner:
         q_vals = lasagne.layers.get_output(self.l_out,
             {
                 self.l_in: (states / input_scale),
-                # self.hidden_state_init: hidden_states
+                self.hidden_state_init: hidden_states
                 # self.l_ram_in: (ram_states / 256.0)
             }
         )
@@ -116,7 +116,7 @@ class DeepQLearner:
             next_q_vals = lasagne.layers.get_output(self.next_l_out,
                 {
                   self.l_in: (next_states / input_scale),
-                    # self.hidden_state_init: hidden_states
+                    self.hidden_state_init: hidden_states
                   # self.l_ram_in: (next_ram_states / 256.0)
             }
             )
@@ -124,7 +124,7 @@ class DeepQLearner:
             next_q_vals = lasagne.layers.get_output(self.l_out,
                 {
                   self.l_in: (next_states / input_scale),
-                    # self.hidden_state_init: hidden_states
+                    self.hidden_state_init: hidden_states
                   # self.l_ram_in: (next_ram_states / 256.0),
                 }
                 )
@@ -165,7 +165,7 @@ class DeepQLearner:
             next_states: self.next_states_shared,
             # ram_states: self.ram_states_shared,
             # next_ram_states: self.next_ram_states_shared,
-            # hidden_states: np.zeros((batch_size, 100)),
+            hidden_states: np.zeros((batch_size, 100)),
             rewards: self.rewards_shared,
             actions: self.actions_shared,
             terminals: self.terminals_shared
@@ -209,7 +209,7 @@ class DeepQLearner:
         self._q_vals = theano.function([], q_vals,
                                        givens={
                                            states: self.states_shared,
-                                           # hidden_states: np.zeros((batch_size, 100)),
+                                           hidden_states: np.zeros((batch_size, 100)),
                                            # ram_states: self.ram_states_shared,
                                        },
                                        mode="DebugMode"
@@ -303,9 +303,9 @@ class DeepQLearner:
             shape=(batch_size, num_frames, input_width, input_height)
         )
 
-        # self.hidden_state_init = lasagne.layers.InputLayer(
-        #     shape=(batch_size, 100)
-        # )
+        self.hidden_state_init = lasagne.layers.InputLayer(
+            shape=(None, 100)
+        )
 
         l_conv1 = lasagne.layers.Conv2DLayer(
             self.l_in,
@@ -347,7 +347,7 @@ class DeepQLearner:
                 )
             ),
             num_units=100,
-            # hid_init=self.hidden_state_init
+            hid_init=self.hidden_state_init
         )
 
         l_hidden_joined = lasagne.layers.DenseLayer(
