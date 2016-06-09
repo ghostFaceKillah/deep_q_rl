@@ -2,14 +2,35 @@ Lasagne
 =======
 
 How standard layer works in lasagne?
-How recurrent layers are implemented in lasagne
+------------------------------------
 
+Conceptually very similarily to blocks.
+
+Every layer extends the base class lasagne.layers.Layer.
+The layer has to implement at least function
+get_output_for(self, input, **kwargs)
+
+It takes theano expression (input)
+and outputs theano expression
+
+this function is called by lasagne.layers.get_output.
+
+
+
+How recurrent layers are implemented in lasagne?
+-----------------------------------------------
+
+
+CustomRecurrentLayer
+get_output_for suggests that the hidden init can be fed 
+at every call
 
 Blocks
 ======
 
 How standard layer works in blocks?
 -----------------------------------
+A standard layer in blocks
 
 
 
@@ -25,3 +46,45 @@ idea is to be able to call apply for a sequence of inputs, where in
 actual apply method that is being wrapped there is only one step implemented.
 
 I am having problems with this idea, I cannot get it to work with lasagne well.
+
+
+Theano - general information
+================================
+
+Theano shared variables
+------------------------
+Theano shared variables are a crossover between symbolic and
+numeric variables.
+
+example
+
+from theano import shared
+
+state = shared(0)
+inc = T.iscalar('inc')
+accumulator = function([inc], state, updates=[(state, state+inc)]
+
+updates are supplied with a list of pairs of the form
+(shared-variable, new-expression)
+
+additionally, you can have
+state.get_value(),
+state.set_value()
+
+Another example
+
+fn_of_state = state * 2 + inc
+
+foo = T.scalar(dtype=state.dtype)
+skip_shared = function([inc, foo], fn_of_state, givens=[(state, foo)])
+
+givens can be used to replace any symbolic value, not just a shared value.
+
+
+Basic tensors
+-------------
+
+ 
+
+
+

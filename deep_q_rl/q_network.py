@@ -13,11 +13,8 @@ Nature, 518(7540):529-533, February 2015
 Author of Lasagne port: Nissan Pow
 Modifications: Nathan Sprague
 """
-from blocks.bricks.recurrent import SimpleRecurrent
-from blocks.bricks import Linear, Tanh
-from blocks import initialization
-
 import lasagne
+from lasagne.layers import RecurrentLayer, ReshapeLayer
 import numpy as np
 import theano
 import theano.tensor as T
@@ -25,6 +22,7 @@ from updates import deepmind_rmsprop
 
 theano.config.optimizer = 'None'
 theano.config.exception_verbosity = 'high'
+# theano.config.compute_test_value = 'warn'
 
 
 class DeepQLearner:
@@ -61,6 +59,7 @@ class DeepQLearner:
 
         self.l_in = None
         self.l_ram_in = None
+        # self.hidden_state_init = None
 
         self.l_out = self.build_network(network_type, input_width, input_height,
                                         num_actions, num_frames, batch_size)
@@ -74,9 +73,11 @@ class DeepQLearner:
         next_states = T.tensor4('next_states')
         ram_states = T.matrix('ram_states')
         next_ram_states = T.matrix('next_ram_states')
+        network_states = T.matrix('internal_states')
         rewards = T.col('rewards')
         actions = T.icol('actions')
         terminals = T.icol('terminals')
+        hidden_states = T.col('hidden_state_init')
 
         self.states_shared = theano.shared(
             np.zeros((batch_size, num_frames, input_height, input_width),
@@ -106,6 +107,7 @@ class DeepQLearner:
         q_vals = lasagne.layers.get_output(self.l_out,
             {
                 self.l_in: (states / input_scale),
+                # self.hidden_state_init: hidden_states
                 # self.l_ram_in: (ram_states / 256.0)
             }
         )
@@ -114,6 +116,7 @@ class DeepQLearner:
             next_q_vals = lasagne.layers.get_output(self.next_l_out,
                 {
                   self.l_in: (next_states / input_scale),
+                    # self.hidden_state_init: hidden_states
                   # self.l_ram_in: (next_ram_states / 256.0)
             }
             )
@@ -121,6 +124,7 @@ class DeepQLearner:
             next_q_vals = lasagne.layers.get_output(self.l_out,
                 {
                   self.l_in: (next_states / input_scale),
+                    # self.hidden_state_init: hidden_states
                   # self.l_ram_in: (next_ram_states / 256.0),
                 }
                 )
@@ -161,6 +165,7 @@ class DeepQLearner:
             next_states: self.next_states_shared,
             # ram_states: self.ram_states_shared,
             # next_ram_states: self.next_ram_states_shared,
+            # hidden_states: np.zeros((batch_size, 100)),
             rewards: self.rewards_shared,
             actions: self.actions_shared,
             terminals: self.terminals_shared
@@ -204,6 +209,7 @@ class DeepQLearner:
         self._q_vals = theano.function([], q_vals,
                                        givens={
                                            states: self.states_shared,
+                                           # hidden_states: np.zeros((batch_size, 100)),
                                            # ram_states: self.ram_states_shared,
                                        },
                                        mode="DebugMode"
@@ -215,29 +221,9 @@ class DeepQLearner:
 
     def build_network(self, network_type, input_width, input_height,
                       output_dim, num_frames, batch_size):
-        if network_type == "nature_cuda":
-            return self.build_nature_network(input_width, input_height,
-                                             output_dim, num_frames, batch_size)
-        if network_type == "nature_dnn":
-            return self.build_nature_network_dnn(input_width, input_height,
-                                                 output_dim, num_frames,
-                                                 batch_size)
-        elif network_type == "nips_cuda":
+        if network_type == "nips_cuda":
             return self.build_nips_network(input_width, input_height,
                                            output_dim, num_frames, batch_size)
-        elif network_type == "nips_dnn":
-            return self.build_nips_network_dnn(input_width, input_height,
-                                               output_dim, num_frames,
-                                               batch_size)
-        elif network_type == "linear":
-            return self.build_linear_network(input_width, input_height,
-                                             output_dim, num_frames, batch_size)
-        elif network_type == "mixed_ram":
-            return self.build_mixed_ram_network(input_width, input_height,
-                                           output_dim, num_frames, batch_size)
-        elif network_type == "just_ram":
-            return self.build_ram_network(input_width, input_height, output_dim,
-                                          num_frames, batch_size)
         elif network_type == "big_mixed_ram":
             return self.build_big_joint_network(input_width, input_height,
                                                 output_dim, num_frames, batch_size)
@@ -245,16 +231,8 @@ class DeepQLearner:
             return self.build_recurent_network(input_width, input_height,
                                                 output_dim, num_frames,
                                                batch_size)
-        elif network_type == "ram_dropout":
-            return self.build_ram_dropout_network(input_width, input_height,
-                    output_dim, num_frames, batch_size)
-        elif network_type == "big_ram":
-            return self.build_big_ram_network(input_width, input_height,
-                    output_dim, num_frames, batch_size)
         else:
             raise ValueError("Unrecognized network: {}".format(network_type))
-
-
 
     def train(self, states, actions, rewards, next_states, terminals, ram_states, next_ram_states):
         """
@@ -325,6 +303,10 @@ class DeepQLearner:
             shape=(batch_size, num_frames, input_width, input_height)
         )
 
+        # self.hidden_state_init = lasagne.layers.InputLayer(
+        #     shape=(batch_size, 100)
+        # )
+
         l_conv1 = lasagne.layers.Conv2DLayer(
             self.l_in,
             num_filters=16,
@@ -355,7 +337,18 @@ class DeepQLearner:
             b=lasagne.init.Constant(.1)
         )
 
-        recurrent_layer = RecurrentLayer(l_hidden1)
+        recurrent_layer = RecurrentLayer(
+            ReshapeLayer(
+                l_hidden1,
+                shape=(
+                    batch_size, # batch size
+                    1,          # sequence length
+                    256         # num inputs
+                )
+            ),
+            num_units=100,
+            # hid_init=self.hidden_state_init
+        )
 
         l_hidden_joined = lasagne.layers.DenseLayer(
             recurrent_layer,
@@ -375,7 +368,6 @@ class DeepQLearner:
         )
 
         return l_out
-
 
 
     def build_big_joint_network(self, input_width, input_height, output_dim,
@@ -516,8 +508,7 @@ class DeepQLearner:
 
         return l_out
 
-
-
+"""
 class RecurrentLayer(lasagne.layers.Layer):
     def __init__(self, incoming, **kwargs):
         super(RecurrentLayer, self).__init__(incoming, **kwargs)
@@ -547,6 +538,7 @@ class RecurrentLayer(lasagne.layers.Layer):
 
     # def get_output_shape_for(self, input_shape):
     #     return (input_shape[0], 256)
+"""
 
 
 def main():
